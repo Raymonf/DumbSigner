@@ -54,10 +54,10 @@ std::string temporary_directory()
 std::vector<unsigned char> readFile(const char* filename)
 {
 	std::ifstream file(filename, std::ios::binary);
-    if (!file.is_open())
-    {
-	    throw std::runtime_error(std::format("could not find file '{}'", filename));
-    }
+	if (!file.is_open())
+	{
+		throw std::runtime_error(std::format("could not find file '{}'", filename));
+	}
 	file.unsetf(std::ios::skipws);
 	std::streampos fileSize;
 	file.seekg(0, std::ios::end);
@@ -66,8 +66,8 @@ std::vector<unsigned char> readFile(const char* filename)
 	std::vector<unsigned char> vec;
 	vec.reserve(static_cast<size_t>(fileSize));
 	vec.insert(vec.begin(),
-		std::istream_iterator<unsigned char>(file),
-		std::istream_iterator<unsigned char>());
+	           std::istream_iterator<unsigned char>(file),
+	           std::istream_iterator<unsigned char>());
 	return vec;
 }
 
@@ -76,15 +76,17 @@ std::vector<unsigned char> readFile(const char* filename)
 /// - Inspired by James Kanze.
 /// - http://stackoverflow.com/questions/20406744/
 std::string replace_all(
-	const std::string& str,   // where to work
-	const std::string& find,  // substitute 'find'
+	const std::string& str, // where to work
+	const std::string& find, // substitute 'find'
 	const std::string& replace //      by 'replace'
-) {
+)
+{
 	using namespace std;
 	string result;
 	size_t find_len = find.size();
 	size_t pos, from = 0;
-	while (string::npos != (pos = str.find(find, from))) {
+	while (string::npos != (pos = str.find(find, from)))
+	{
 		result.append(str, from, pos - from);
 		result.append(replace);
 		from = pos + find_len;
