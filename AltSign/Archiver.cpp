@@ -32,6 +32,8 @@ const int ALTMaxFilenameLength = 512;
 #include <sstream>
 #include <WinSock2.h>
 
+#include <unordered_set>
+
 #define odslog(msg) { std::wstringstream ss; ss << msg << std::endl; OutputDebugStringW(ss.str().c_str()); }
 
 extern std::string StringFromWideString(std::wstring wideString);
@@ -134,17 +136,17 @@ std::string UnzipAppBundle(std::string filepath, std::string outputDirectory)
 		filename = replace_all(filename, ":", "__colon__");
         
 		fs::path filepath = fs::path(outputDirectory).append(filename);
-		fs::path parentDirectory = (filename[filename.size() - 1] == ALTDirectoryDeliminator) ? filepath.parent_path().parent_path() : filepath.parent_path();
+		fs::path parentDirectory = filepath.parent_path();
         
         if (!fs::exists(parentDirectory))
         {
-            fs::create_directory(parentDirectory);
+            fs::create_directories(parentDirectory);
         }
         
         if (filename[filename.size() - 1] == ALTDirectoryDeliminator)
         {
             // Directory
-            fs::create_directory(filepath);
+            fs::create_directories(filepath);
         }
         else
         {
@@ -156,7 +158,8 @@ std::string UnzipAppBundle(std::string filepath, std::string outputDirectory)
             }
 
 			std::string narrowFilepath = StringFromWideString(filepath.c_str());
-            
+            odslog("Decompressing to " << narrowFilepath.c_str())
+
             outputFile = fopen(narrowFilepath.c_str(), "wb");
             if (outputFile == NULL)
             {
@@ -184,8 +187,6 @@ std::string UnzipAppBundle(std::string filepath, std::string outputDirectory)
                 }
                 
             } while (result > 0);
-
-			odslog("Extracted file:" << filepath);
             
             short permissions = (info.external_fa >> 16) & 0x01FF;
             _chmod(narrowFilepath.c_str(), permissions);
@@ -255,6 +256,7 @@ void WriteFileToZipFile(zipFile *zipFile, fs::path filepath, fs::path relativePa
     char *bytes = nullptr;
     unsigned int fileSize = 0;
     
+	std::vector<unsigned char> vec;
     if (isDirectory)
     {
         // Remove leading directory slash.
@@ -280,11 +282,16 @@ void WriteFileToZipFile(zipFile *zipFile, fs::path filepath, fs::path relativePa
         
         fileInfo.external_fa = (unsigned int)(permissionsLong << 16L);
         
-        std::ifstream ifs(filepath.string());
-        std::vector<char> data((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-        
-        bytes = data.data();
-        fileSize = (unsigned int)data.size();
+		std::ifstream file(filepath.string(), std::ios::binary);
+		file.unsetf(std::ios::skipws);
+		std::streampos fileSize;
+		file.seekg(0, std::ios::end);
+		fileSize = file.tellg();
+		file.seekg(0, std::ios::beg);
+		vec.reserve(static_cast<size_t>(fileSize));
+		vec.insert(vec.begin(),
+			std::istream_iterator<unsigned char>(file),
+			std::istream_iterator<unsigned char>());
     }
 
 	std::replace(filename.begin(), filename.end(), ALTDirectoryDeliminator, '/');
@@ -294,7 +301,7 @@ void WriteFileToZipFile(zipFile *zipFile, fs::path filepath, fs::path relativePa
         throw ArchiveError(ArchiveErrorCode::UnknownWrite);
     }
     
-    if (zipWriteInFileInZip(*zipFile, bytes, fileSize) != ZIP_OK)
+    if (zipWriteInFileInZip(*zipFile, vec.data(), vec.size()) != ZIP_OK)
     {
         zipCloseFileInZip(*zipFile);
         throw ArchiveError(ArchiveErrorCode::UnknownWrite);
@@ -324,19 +331,37 @@ std::string ZipAppBundle(std::string filepath)
     
     fs::path payloadDirectory = "Payload";
     fs::path appBundleDirectory = payloadDirectory.append(appBundleFilename.string());
-    
-    fs::path rootPath = fs::relative("", appBundleDirectory);
-    
-    for (auto& entry: fs::recursive_directory_iterator(rootPath))
+
+    // pass to check for .ldid.* files
+    std::unordered_set<std::string> ldidPaths;
+    for (auto& entry: fs::recursive_directory_iterator(filepath))
     {
-        auto filepath = entry.path();
-        auto relativePath = entry.path().relative_path();
-        
-        WriteFileToZipFile(&zipFile, filepath, relativePath);
+        auto path = entry.path();
+        if (startsWith(path.filename().string(), ".ldid."))
+        {
+	        ldidPaths.insert(path.string());
+		}
+    }
+
+    // now do the compression shit
+    for (auto& entry: fs::recursive_directory_iterator(filepath))
+    {
+        auto path = entry.path();
+
+        // is this empty or a directory
+        if (path.empty() ||
+            fs::is_directory(path))
+            continue;
+
+		fs::path relativeName = fs::relative(path, filepath);
+        auto relativePath = appBundleDirectory / relativeName;
+        odslog("Compressing " << path << " to " << relativePath);
+
+        WriteFileToZipFile(&zipFile, path, relativePath);
     }
     
-    WriteFileToZipFile(&zipFile, payloadDirectory, payloadDirectory);
-    WriteFileToZipFile(&zipFile, appBundleDirectory, appBundleDirectory);
+    //WriteFileToZipFile(&zipFile, payloadDirectory, payloadDirectory);
+    //WriteFileToZipFile(&zipFile, appBundleDirectory, appBundleDirectory);
     
     zipClose(zipFile, NULL);
     

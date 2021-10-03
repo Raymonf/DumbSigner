@@ -18,6 +18,7 @@
 #include <openssl/applink.c>
 
 #include <filesystem>
+#include <fstream>
 
 #include <thread>         // std::this_thread::sleep_for
 #include <chrono>         // std::chrono::seconds
@@ -113,7 +114,7 @@ namespace fs = std::filesystem;
 
 extern std::string make_uuid();
 
-#define odslog(msg) { std::stringstream ss; ss << msg << std::endl; OutputDebugStringA(ss.str().c_str()); }
+#define odslog(msg) { std::stringstream ss; ss << msg << std::endl; OutputDebugStringA(ss.str().c_str()); std::cout << ss.str() << std::endl; }
 
 std::string CertificatesContent(std::shared_ptr<Certificate> altCertificate)
 {
@@ -189,7 +190,7 @@ std::string CertificatesContent(std::shared_ptr<Certificate> altCertificate)
     return output;
 }
 
-Signer::Signer(std::shared_ptr<Team> team, std::shared_ptr<Certificate> certificate) : _team(team), _certificate(certificate)
+Signer::Signer(std::shared_ptr<Certificate> certificate) : _certificate(certificate)
 {
 }
 
@@ -221,7 +222,7 @@ void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningP
             
             fs::create_directory(outputDirectoryPath);
             
-            appBundlePath = UnzipAppBundle(appPath.string(), outputDirectoryPath.string());
+            appBundlePath = UnzipAppBundle(ipaPath.value().string(), outputDirectoryPath.string());
         }
         else
         {
@@ -242,12 +243,14 @@ void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningP
             return nullptr;
         };
         
-        auto prepareApp = [&profileForApp, &entitlementsByFilepath](Application &app)
+        auto prepareApp = [&profileForApp, &entitlementsByFilepath, &profiles](Application &app)
         {
             auto profile = profileForApp(app);
             if (profile == nullptr)
             {
-                throw SignError(SignErrorCode::MissingProvisioningProfile);
+                if (profiles.size() < 1)
+					throw SignError(SignErrorCode::MissingProvisioningProfile);
+                profile = profiles.at(0); // fallback, not sure what this is
             }
             
             fs::path profilePath = fs::path(app.path()).append("embedded.mobileprovision");
@@ -274,65 +277,80 @@ void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningP
 		}
         
         // Sign application
-        ldid::DiskFolder appBundle(app.path());
-        std::string key = CertificatesContent(this->certificate());
-        
-        ldid::Sign("", appBundle, key, "",
-                   ldid::fun([&](const std::string &path, const std::string &binaryEntitlements) -> std::string {
-            std::string filepath;
-            
-            if (path.size() == 0)
-            {
-                filepath = app.path();
-            }
-            else
-            {
-                filepath = fs::canonical(fs::path(app.path()).append(path)).string();
-            }
+        {
+	        ldid::DiskFolder appBundle(app.path());
+	        std::string key = CertificatesContent(this->certificate());
+	        
+	        ldid::Sign("", appBundle, key, "",
+	                   ldid::fun([&](const std::string &path, const std::string &binaryEntitlements) -> std::string {
 
-            auto entitlements = entitlementsByFilepath[filepath];
-            return entitlements;
-        }),
-                   ldid::fun([&](const std::string &string) {
-			odslog("Signing: " << string);
-//            progress.completedUnitCount += 1;
-        }),
-                   ldid::fun([&](const double signingProgress) {
-			odslog("Signing Progress: " << signingProgress);
-        }));
+	            std::string filepath;
+	            
+	            if (path.size() == 0)
+	            {
+	                filepath = app.path();
+	            }
+	            else
+	            {
+	                filepath = fs::canonical(fs::path(app.path()).append(path)).string();
+	            }
+
+	            auto entitlements = entitlementsByFilepath[filepath];
+	            return entitlements;
+
+	        }),
+	                   ldid::fun([&](const std::string &string) {
+				odslog("Signing: " << string);
+	//            progress.completedUnitCount += 1;
+	        }),
+	                   ldid::fun([&](const double signingProgress) {
+				//odslog("Signing Progress: " << signingProgress);
+	        }));
+        }
         
         // Zip app back up.
         if (ipaPath.has_value())
         {
             auto resignedPath = ZipAppBundle(appBundlePath.string());
-            
-            if (fs::exists(*ipaPath))
+            auto newName = ipaPath.value().replace_extension(".signed.ipa");
+
+            if (fs::exists(newName))
             {
-                fs::remove(*ipaPath);
+	            odslog("Deleting existing file " << newName);
+                fs::remove(newName);
             }
-            
-            fs::rename(*ipaPath, resignedPath);
+
+            fs::rename(resignedPath, newName);
+        }
+        
+        if (fs::is_directory(appPath))
+        {
+            std::error_code errorCode;
+			if (!fs::remove_all(appPath, errorCode))
+            {
+				std::cout << errorCode.message() << std::endl;
+			}
         }
 
-		return;
+        return;
     }
     catch (std::exception& e)
     {
+        odslog("Exception message: " << e.what());
+
         if (!ipaPath.has_value())
         {
             return;
         }
         
-        fs::remove(*ipaPath);
-        
-        throw;
+        // throw;
     }
 }
 
-std::shared_ptr<Team> Signer::team() const
+/*std::shared_ptr<Team> Signer::team() const
 {
     return _team;
-}
+}*/
 
 std::shared_ptr<Certificate> Signer::certificate() const
 {

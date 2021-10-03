@@ -1,19 +1,25 @@
-# AltServer-Windows on VS 2019
-In order to compile AltServer on VS 2019 there a few things required. If you are using the Community edition of VS you will need to install the installer plugin from [here](https://marketplace.visualstudio.com/items?itemName=VisualStudioClient.MicrosoftVisualStudio2017InstallerProjects).
+# DumbSigner
 
-1. clone the repository **recursively** and checkout the experimental branch
-1. install and bootstrap [VCPKG](https://github.com/microsoft/vcpkg) 
-1. with vckpg install the following packages (it takes reaaaaaally long): cpprestsdk dirent mdnsresponder
-1. in the folder (root)\Dependencies\libmobiledevice-vs run get-source to download the source code
-1. download an compile [WinSparkle](https://github.com/vslavik/winsparkle); you will need to copy the generated LIB in
-(root)\Dependencies\release
-1. in the project LDID change the language standard from c++14 to c++17, turn off intellisense errors (misleading) and fix the two
-errors fixed in [this PR](https://github.com/rileytestut/AltServer-Windows/pull/1)
-1. add the following import in Connection.cpp: `#include <codecvt>`
-1. in DeviceManager.cpp replace `idevice_new` call with `idevice_new_with_options(&device, udid, IDEVICE_LOOKUP_USBMUX);`
-1. in the same file replace `idevice_new_ignore_network` with `idevice_new_with_options(&device, udid, (idevice_options)(IDEVICE_LOOKUP_USBMUX | IDEVICE_LOOKUP_NETWORK));`
-1. Fix the path for the icons in the RC file.
-1. Copy all binaries in a single folder, including the Apple.pem file
+A mutilated version of Riley Testut's [AltServer for Windows](https://github.com/rileytestut/AltServer-Windows) to sign IPAs with arbitrary p12 and mobileprovision files on Windows.
 
-The code should now compile, download the certificate, sign and install.
-TODO: fix the installer project by placing the files in the proper folder.
+It works well enough for my needs. It probably works in Wine, too.
+
+## Usage
+
+```bash
+> DumbSigner.exe --app=app.ipa --cert=AAAAAAAAAA.p12 --password="correct horse battery staple" --profile=Profile.mobileprovision
+```
+
+The output is a file named `app.signed.ipa`.
+
+## Compilation
+
+1. Install Visual Studio 2019 with desktop C++ support.
+2. Use [vcpkg](https://github.com/microsoft/vcpkg) to install the packages `zlib openssl dirent cxxopts` for `x86-windows-static`.
+3. Clone this repository recursively.
+4. Open the solution and build the `Release` configuration for `x86`.
+
+## Notes
+
+* 64bit is untested.
+* **You may need up to 2 times the app's size of disk space and memory to run this.**

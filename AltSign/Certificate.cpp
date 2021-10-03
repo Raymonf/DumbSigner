@@ -8,11 +8,11 @@
 
 #include "Certificate.hpp"
 #include "Error.hpp"
+#include "base64.h"
+#include <sstream>
 
 #include <openssl/pem.h>
 #include <openssl/pkcs12.h>
-
-#include <cpprest/http_client.h>
 
 extern std::string StringFromWideString(std::wstring wideString);
 extern std::wstring WideStringFromString(std::string string);
@@ -148,39 +148,6 @@ Certificate::Certificate(plist_t plist)
 	}
 }
 
-Certificate::Certificate(web::json::value json)
-{
-	auto identifier = json[L"id"].as_string();
-	auto attributes = json[L"attributes"];
-
-	std::vector<unsigned char> data;
-	if (attributes.has_field(L"certificateContent"))
-	{
-		auto encodedData = attributes[L"certificateContent"].as_string();
-		data = base64_decode(StringFromWideString(encodedData));
-	}
-
-	auto machineName = attributes[L"machineName"].as_string();
-	auto machineIdentifier = attributes[L"machineId"].as_string();
-
-	if (data.size() != 0)
-	{
-		this->ParseData(data);
-	}
-	else
-	{
-		auto name = attributes[L"name"].as_string();
-		auto serialNumber = attributes[L"serialNumber"].as_string();
-
-		_name = StringFromWideString(name);
-		_serialNumber = StringFromWideString(serialNumber);
-	}
-
-	_identifier = std::make_optional(StringFromWideString(identifier));
-	_machineName = std::make_optional(StringFromWideString(machineName));
-	_machineIdentifier = std::make_optional(StringFromWideString(machineIdentifier));
-}
-
 Certificate::Certificate(std::vector<unsigned char>& p12Data, std::string password)
 {
 	BIO* inputP12Buffer = BIO_new(BIO_s_mem());
@@ -245,10 +212,10 @@ void Certificate::ParseData(std::vector<unsigned char>& data)
     if (prefix != kCertificatePEMPrefix)
     {
         // Convert to proper PEM format before storing.
-        utility::string_t base64Data = utility::conversions::to_base64(data);
+        auto base64Data = base64_encode(data.data(), data.size(), false); //utility::conversions::to_base64(data);
         
         std::stringstream ss;
-        ss << kCertificatePEMPrefix << std::endl << StringFromWideString(base64Data) << std::endl << kCertificatePEMSuffix;
+        ss << kCertificatePEMPrefix << std::endl << base64Data << std::endl << kCertificatePEMSuffix;
         
         auto content = ss.str();
         pemData = std::vector<unsigned char>(content.begin(), content.end());

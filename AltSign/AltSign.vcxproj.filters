@@ -15,16 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Account.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AppID.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Certificate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CertificateRequest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Device.cpp">
@@ -33,13 +24,7 @@
     <ClCompile Include="ProvisioningProfile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Team.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Application.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AppleAPI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Archiver.cpp">
@@ -63,30 +48,12 @@
     <ClCompile Include="Dependencies\minizip\zip.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AnisetteData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AppleAPI+Authentication.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AppleAPISession.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AppGroup.cpp">
+    <ClCompile Include="base64.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Account.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AppID.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Certificate.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CertificateRequest.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Device.hpp">
@@ -98,13 +65,7 @@
     <ClInclude Include="ProvisioningProfile.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Team.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Application.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AppleAPI.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Archiver.hpp">
@@ -131,17 +92,8 @@
     <ClInclude Include="Dependencies\minizip\zip.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AnisetteData.h">
+    <ClInclude Include="base64.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AppleAPISession.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AppGroup.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="PrefixHeader.pch" />
   </ItemGroup>
 </Project>

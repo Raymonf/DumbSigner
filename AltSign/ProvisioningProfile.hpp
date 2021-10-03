@@ -9,9 +9,6 @@
 #ifndef ProvisioningProfile_hpp
 #define ProvisioningProfile_hpp
 
-/* The classes below are exported */
-#pragma GCC visibility push(default)
-
 #include <optional>
 #include <string>
 #include <vector>
@@ -69,7 +66,5 @@ private:
     
     void ParseData(std::vector<unsigned char>& data);
 };
-
-#pragma GCC visibility pop
 
 #endif /* ProvisioningProfile_hpp */

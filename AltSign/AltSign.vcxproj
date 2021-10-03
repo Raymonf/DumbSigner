@@ -19,17 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Account.cpp" />
-    <ClCompile Include="AnisetteData.cpp" />
-    <ClCompile Include="AppGroup.cpp" />
-    <ClCompile Include="AppID.cpp" />
-    <ClCompile Include="AppleAPI+Authentication.cpp" />
-    <ClCompile Include="AppleAPI.cpp" />
-    <ClCompile Include="AppleAPISession.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Archiver.cpp" />
+    <ClCompile Include="base64.cpp" />
     <ClCompile Include="Certificate.cpp" />
-    <ClCompile Include="CertificateRequest.cpp" />
     <ClCompile Include="Dependencies\minizip\ioapi.c" />
     <ClCompile Include="Dependencies\minizip\iowin32.c" />
     <ClCompile Include="Dependencies\minizip\mztools.c" />
@@ -38,19 +31,12 @@
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="ProvisioningProfile.cpp" />
     <ClCompile Include="Signer.cpp" />
-    <ClCompile Include="Team.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Account.hpp" />
-    <ClInclude Include="AnisetteData.h" />
-    <ClInclude Include="AppGroup.hpp" />
-    <ClInclude Include="AppID.hpp" />
-    <ClInclude Include="AppleAPI.hpp" />
-    <ClInclude Include="AppleAPISession.h" />
     <ClInclude Include="Application.hpp" />
     <ClInclude Include="Archiver.hpp" />
+    <ClInclude Include="base64.h" />
     <ClInclude Include="Certificate.hpp" />
-    <ClInclude Include="CertificateRequest.hpp" />
     <ClInclude Include="Dependencies\minizip\crypt.h" />
     <ClInclude Include="Dependencies\minizip\ioapi.h" />
     <ClInclude Include="Dependencies\minizip\iowin32.h" />
@@ -61,10 +47,6 @@
     <ClInclude Include="Error.hpp" />
     <ClInclude Include="ProvisioningProfile.hpp" />
     <ClInclude Include="Signer.hpp" />
-    <ClInclude Include="Team.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="PrefixHeader.pch" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Dependencies\libimobiledevice-vs\libplist.vcxproj">
@@ -182,6 +164,8 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\Dependencies\libimobiledevice-vs\libplist\include;$(ProjectDir)Dependencies\minizip;$(ProjectDir)..\ldid;$(ProjectDir)Dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

@@ -9,9 +9,6 @@
 #ifndef Application_hpp
 #define Application_hpp
 
-/* The classes below are exported */
-#pragma GCC visibility push(default)
-
 #include <optional>
 #include <string>
 #include <memory>
@@ -59,7 +56,5 @@ private:
 
 	std::string entitlementsString();
 };
-
-#pragma GCC visibility pop
 
 #endif /* Application_hpp */

@@ -9,15 +9,11 @@
 #ifndef Certificate_hpp
 #define Certificate_hpp
 
-/* The classes below are exported */
-#pragma GCC visibility push(default)
-
 #include <string>
 #include <vector>
 #include <optional>
 
 #include <plist/plist.h>
-#include <cpprest/json.h>
 
 class Certificate
 {
@@ -26,7 +22,6 @@ public:
     ~Certificate();
     
     Certificate(plist_t plist) /* throws */;
-	Certificate(web::json::value plist) /* throws */;
     Certificate(std::vector<unsigned char>& data);
 	Certificate(std::vector<unsigned char>& p12Data, std::string password);
     
@@ -60,7 +55,5 @@ private:
     
     void ParseData(std::vector<unsigned char>& data);
 };
-
-#pragma GCC visibility pop
 
 #endif /* Certificate_hpp */
