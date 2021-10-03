@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 
     auto result = options.parse(argc, argv);
 
-    if (result.count("help")) {
+    if (result.count("help") || !(result.count("cert") || result.count("password") || result.count("profile") || result.count("app"))) {
 		std::cout << options.help() << std::endl;
 		exit(0);
     }
