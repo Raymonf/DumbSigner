@@ -28,7 +28,6 @@
     <ClCompile Include="Dependencies\minizip\mztools.c" />
     <ClCompile Include="Dependencies\minizip\unzip.c" />
     <ClCompile Include="Dependencies\minizip\zip.c" />
-    <ClCompile Include="Device.cpp" />
     <ClCompile Include="ProvisioningProfile.cpp" />
     <ClCompile Include="Signer.cpp" />
   </ItemGroup>
@@ -43,7 +42,6 @@
     <ClInclude Include="Dependencies\minizip\mztools.h" />
     <ClInclude Include="Dependencies\minizip\unzip.h" />
     <ClInclude Include="Dependencies\minizip\zip.h" />
-    <ClInclude Include="Device.hpp" />
     <ClInclude Include="Error.hpp" />
     <ClInclude Include="ProvisioningProfile.hpp" />
     <ClInclude Include="Signer.hpp" />
