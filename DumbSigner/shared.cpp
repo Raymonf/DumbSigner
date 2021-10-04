@@ -56,7 +56,7 @@ std::vector<unsigned char> readFile(const char* filename)
 	std::ifstream file(filename, std::ios::binary);
 	if (!file.is_open())
 	{
-		throw std::runtime_error(std::format("could not find file '{}'", filename));
+		throw std::runtime_error(std::format("could not open file '{}'", filename));
 	}
 	file.unsetf(std::ios::skipws);
 	std::streampos fileSize;
