@@ -23,3 +23,14 @@ The output is a file named `app.signed.ipa`.
 
 * 64bit is untested.
 * **You may need up to 2 times the app's size of disk space and memory to run this.**
+
+## Roadmap
+
+See the Projects tab. For the time being:
+
+* Better progress indication
+* Prettier (and safer) logging
+* A managed .NET (Core) assembly to interface with the signing parts
+* [(and more...)](https://github.com/Raymonf/DumbSigner/projects/1)
+
+I don't really expect anyone to use this other than myself, so I won't make any promises. In any case, contributions are very welcome (just send in a PR).

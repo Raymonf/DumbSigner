@@ -47,7 +47,7 @@ ProvisioningProfile::ProvisioningProfile() {}
 ProvisioningProfile::~ProvisioningProfile()
 {
     if (this->_entitlements != nullptr) {
-        //plist_free(this->_entitlements);
+        plist_free(this->_entitlements);
     }
 }
 

@@ -114,7 +114,7 @@ namespace fs = std::filesystem;
 
 extern std::string make_uuid();
 
-#define odslog(msg) { std::stringstream ss; ss << msg << std::endl; OutputDebugStringA(ss.str().c_str()); std::cout << ss.str() << std::endl; }
+#define odslog(msg) { std::stringstream ss; ss << msg << std::endl; OutputDebugStringA(ss.str().c_str()); }
 
 std::string CertificatesContent(std::shared_ptr<Certificate> altCertificate)
 {
@@ -137,8 +137,12 @@ std::string CertificatesContent(std::shared_ptr<Certificate> altCertificate)
     auto* certificates = sk_X509_new(NULL);
 
     BIO* rootCertificateBuffer = BIO_new_mem_buf(AppleRootCertificateData, (int)strlen(AppleRootCertificateData));
-    BIO* wwdrCertificateBuffer = NULL;
+    auto rootCertificate = PEM_read_bio_X509(rootCertificateBuffer, NULL, NULL, NULL);
+    if (rootCertificate != NULL) {
+        sk_X509_push(certificates, rootCertificate);
+    }
 
+    BIO* wwdrCertificateBuffer = NULL;
     unsigned long issuerHash = X509_issuer_name_hash(certificate);
     if (issuerHash == 0x817d2f7a) {
         // Use legacy WWDR certificate.
@@ -146,11 +150,6 @@ std::string CertificatesContent(std::shared_ptr<Certificate> altCertificate)
     } else {
         // Use latest WWDR certificate.
         wwdrCertificateBuffer = BIO_new_mem_buf(AppleWWDRCertificateData, (int)strlen(AppleWWDRCertificateData));
-    }
-
-    auto rootCertificate = PEM_read_bio_X509(rootCertificateBuffer, NULL, NULL, NULL);
-    if (rootCertificate != NULL) {
-        sk_X509_push(certificates, rootCertificate);
     }
 
     auto wwdrCertificate = PEM_read_bio_X509(wwdrCertificateBuffer, NULL, NULL, NULL);
@@ -192,7 +191,7 @@ Signer::~Signer()
     int i = 0;
 }
 
-void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningProfile>> profiles)
+void Signer::SignApp(std::string path, std::shared_ptr<ProvisioningProfile> profile)
 {
     fs::path appPath = fs::path(path);
 
@@ -213,31 +212,16 @@ void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningP
 
             fs::create_directory(outputDirectoryPath);
 
+            std::cout << "Extracting " << ipaPath.value() << std::endl;
+
             appBundlePath = UnzipAppBundle(ipaPath.value().string(), outputDirectoryPath.string());
         } else {
             appBundlePath = appPath;
         }
 
         std::map<std::string, std::string> entitlementsByFilepath;
-
-        auto profileForApp = [&profiles](Application& app) -> std::shared_ptr<ProvisioningProfile> {
-            for (auto& profile : profiles) {
-                if (profile->bundleIdentifier() == app.bundleIdentifier()) {
-                    return profile;
-                }
-            }
-
-            return nullptr;
-        };
-
-        auto prepareApp = [&profileForApp, &entitlementsByFilepath, &profiles](Application& app) {
-            auto profile = profileForApp(app);
-            if (profile == nullptr) {
-                if (profiles.size() < 1)
-                    throw SignError(SignErrorCode::MissingProvisioningProfile);
-                profile = profiles.at(0); // fallback, not sure what this is
-            }
-
+        
+        auto prepareApp = [&entitlementsByFilepath, &profile](Application& app) {
             fs::path profilePath = fs::path(app.path()).append("embedded.mobileprovision");
 
             std::ofstream fout(profilePath.string(), std::ios::out | std::ios::binary);
@@ -252,16 +236,21 @@ void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningP
 
             entitlementsByFilepath[app.path()] = entitlementsString;
         };
+        
 
+        std::cout << "Preparing application..." << std::endl;
         Application app(appBundlePath.string());
         prepareApp(app);
-
+        
+        std::cout << "Preparing extensions..." << std::endl;
         for (auto appExtension : app.appExtensions()) {
             prepareApp(*appExtension);
         }
 
         // Sign application
+        // ~DiskFolder "commits" the signed files to disk (meaning it renames .ldid.* to just the filename)
         {
+            std::cout << "Signing..." << std::endl;
             ldid::DiskFolder appBundle(app.path());
             std::string key = CertificatesContent(this->certificate());
 
@@ -281,7 +270,7 @@ void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningP
 
                 }),
                 ldid::fun([&](const std::string& string) {
-                    odslog("Signing: " << string);
+                    // odslog("Signing: " << string);
                     //            progress.completedUnitCount += 1;
                 }),
                 ldid::fun([&](const double signingProgress) {
@@ -291,11 +280,12 @@ void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningP
 
         // Zip app back up.
         if (ipaPath.has_value()) {
+            std::cout << "Re-compressing..." << std::endl;
             auto resignedPath = ZipAppBundle(appBundlePath.string());
             auto newName = ipaPath.value().replace_extension(".signed.ipa");
 
             if (fs::exists(newName)) {
-                odslog("Deleting existing file " << newName);
+                odslog("Replacing file " << newName);
                 fs::remove(newName);
             }
 
@@ -303,21 +293,18 @@ void Signer::SignApp(std::string path, std::vector<std::shared_ptr<ProvisioningP
         }
 
         if (fs::is_directory(appPath)) {
+            std::cout << "Deleting temporary folder..." << std::endl;
             std::error_code errorCode;
             if (!fs::remove_all(appPath, errorCode)) {
                 std::cout << errorCode.message() << std::endl;
             }
         }
-
+        
+        std::cout << "Done!" << std::endl;
         return;
     } catch (std::exception& e) {
         odslog("Exception message: " << e.what());
-
-        if (!ipaPath.has_value()) {
-            return;
-        }
-
-        // throw;
+        throw e;
     }
 }
 

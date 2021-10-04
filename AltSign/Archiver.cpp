@@ -32,8 +32,6 @@ const int ALTMaxFilenameLength = 512;
 #include <sstream>
 #include <WinSock2.h>
 
-#include <unordered_set>
-
 #define odslog(msg) { std::wstringstream ss; ss << msg << std::endl; OutputDebugStringW(ss.str().c_str()); }
 
 extern std::string StringFromWideString(std::wstring wideString);
@@ -146,7 +144,10 @@ std::string UnzipAppBundle(std::string filepath, std::string outputDirectory)
 
             outputFile = fopen(narrowFilepath.c_str(), "wb");
             if (outputFile == NULL) {
+                auto error = GetLastError();
                 finish();
+                std::cout << "Error: Couldn't open \"" << narrowFilepath << "\". Windows error code was: " << std::to_string(error) << "d" << std::endl;
+                fflush(stdout); // immediately show, in case of debugging where the buffer may not be emptied before the throw (which causes the error to never show in the console)
                 throw ArchiveError(ArchiveErrorCode::UnknownWrite);
             }
 
@@ -297,21 +298,11 @@ std::string ZipAppBundle(std::string filepath)
 
     fs::path payloadDirectory = "Payload";
     fs::path appBundleDirectory = payloadDirectory.append(appBundleFilename.string());
-
-    // pass to check for .ldid.* files
-    std::unordered_set<std::string> ldidPaths;
-    for (auto& entry : fs::recursive_directory_iterator(filepath)) {
-        auto path = entry.path();
-        if (startsWith(path.filename().string(), ".ldid.")) {
-            ldidPaths.insert(path.string());
-        }
-    }
-
-    // now do the compression shit
+    
     for (auto& entry : fs::recursive_directory_iterator(filepath)) {
         auto path = entry.path();
 
-        // is this empty or a directory
+        // skip if empty or a directory
         if (path.empty() ||
             fs::is_directory(path))
             continue;
@@ -322,9 +313,6 @@ std::string ZipAppBundle(std::string filepath)
 
         WriteFileToZipFile(&zipFile, path, relativePath);
     }
-
-    //WriteFileToZipFile(&zipFile, payloadDirectory, payloadDirectory);
-    //WriteFileToZipFile(&zipFile, appBundleDirectory, appBundleDirectory);
 
     zipClose(zipFile, NULL);
 
