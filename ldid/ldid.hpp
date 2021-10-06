@@ -95,49 +95,6 @@ class __declspec(dllexport) SubFolder :
     virtual void Find(const std::string &path, const Functor<void (const std::string &)> &code, const Functor<void (const std::string &, const Functor<std::string ()> &)> &link) const;
 };
 
-class __declspec(dllexport) UnionFolder :
-    public Folder
-{
-  private:
-    struct Reset {
-        const void *flag_;
-        std::streambuf *data_;
-    };
-
-    Folder &parent_;
-    std::set<std::string> deletes_;
-
-    std::map<std::string, std::string> remaps_;
-    mutable std::map<std::string, Reset> resets_;
-
-    std::string Map(const std::string &path) const;
-    void Map(const std::string &path, const Functor<void (const std::string &)> &code, const std::string &file, const Functor<void (const Functor<void (std::streambuf &, size_t, const void *)> &)> &save) const;
-
-  public:
-    UnionFolder(Folder &parent);
-
-    virtual void Save(const std::string &path, bool edit, const void *flag, const Functor<void (std::streambuf &)> &code);
-    virtual bool Look(const std::string &path) const;
-    virtual void Open(const std::string &path, const Functor<void (std::streambuf &, size_t, const void *)> &code) const;
-    virtual void Find(const std::string &path, const Functor<void (const std::string &)> &code, const Functor<void (const std::string &, const Functor<std::string ()> &)> &link) const;
-
-    void operator ()(const std::string &from) {
-        deletes_.insert(from);
-    }
-
-    void operator ()(const std::string &from, const std::string &to) {
-        operator ()(from);
-        remaps_[to] = from;
-    }
-
-    void operator ()(const std::string &from, const void *flag, std::streambuf &data) {
-        operator ()(from);
-        auto &reset(resets_[from]);
-        reset.flag_ = flag;
-        reset.data_ = &data;
-    }
-};
-
 struct __declspec(dllexport) Hash {
     uint8_t sha1_[0x14];
     uint8_t sha256_[0x20];

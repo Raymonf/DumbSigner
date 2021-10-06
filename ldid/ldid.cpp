@@ -22,9 +22,6 @@
 #define __is_trivially_destructible(arg) __has_trivial_destructor(arg)
 #define NOMINMAX
 
-#define O_RDONLY         00
-#define O_WRONLY         01
-#define O_RDWR           02
 #define R_OK    4       /* Test for read permission.  */
 
 #define __WIN32__
@@ -153,7 +150,7 @@ namespace fs = std::filesystem;
     if (error == EINTR) \
         continue; \
     /* XXX: EINTR is included in this list to fix g++ */ \
-    for (auto success : (long[]) {EINTR, __VA_ARGS__}) \
+    for (auto success : {EINTR, __VA_ARGS__}) \
         if (error == success) \
             return (decltype(expr)) -success; \
     _assert_(false, "errno=%u", error); \
@@ -167,18 +164,17 @@ namespace fs = std::filesystem;
 #define _not(type) \
     ((type) ~ (type) 0)
 
-#define _packed \
-    __attribute__((packed))
-
 template <typename Type_>
 struct Iterator_ {
 	typedef typename Type_::const_iterator Result;
 };
 
+#define __typeof__(item) std::remove_reference<decltype(item)>::type
+
 #define _foreach(item, list) \
     for (bool _stop(true); _stop; ) \
         for (const __typeof__(list) &_list = (list); _stop; _stop = false) \
-            for (Iterator_<__typeof__(list)>::Result _item = _list.begin(); _item != _list.end(); ++_item) \
+            for (__typeof__(list)::const_iterator _item = _list.begin(); _item != _list.end(); ++_item) \
                 for (bool _suck(true); _suck; _suck = false) \
                     for (const __typeof__(*_item) &item = *_item; _suck; _suck = false)
 
@@ -209,7 +205,6 @@ Scope<Function_> _scope(const Function_& function) {
 }
 
 #define _scope__(counter, function) \
-    __attribute__((__unused__)) \
     const _Scope &_scope ## counter(_scope([&]function))
 #define _scope_(counter, function) \
     _scope__(counter, function)
@@ -237,10 +232,11 @@ Scope<Function_> _scope(const Function_& function) {
 #define CPU_TYPE_POWERPC64 (CPU_ARCH_ABI64 | CPU_TYPE_POWERPC)
 #define CPU_TYPE_X86_64    (CPU_ARCH_ABI64 | CPU_TYPE_X86)
 
+#pragma pack(push, 1)
 struct fat_header {
 	uint32_t magic;
 	uint32_t nfat_arch;
-} _packed;
+};
 
 #define FAT_MAGIC 0xcafebabe
 #define FAT_CIGAM 0xbebafeca
@@ -251,7 +247,7 @@ struct fat_arch {
 	uint32_t offset;
 	uint32_t size;
 	uint32_t align;
-} _packed;
+};
 
 struct mach_header {
 	uint32_t magic;
@@ -261,7 +257,7 @@ struct mach_header {
 	uint32_t ncmds;
 	uint32_t sizeofcmds;
 	uint32_t flags;
-} _packed;
+};
 
 #define MH_MAGIC 0xfeedface
 #define MH_CIGAM 0xcefaedfe
@@ -280,7 +276,7 @@ struct mach_header {
 struct load_command {
 	uint32_t cmd;
 	uint32_t cmdsize;
-} _packed;
+};
 
 #define LC_REQ_DYLD           uint32_t(0x80000000)
 
@@ -299,34 +295,39 @@ struct load_command {
 #define LC_DYLD_INFO_ONLY     uint32_t(0x22 | LC_REQ_DYLD)
 #define LC_ENCRYPTION_INFO_64 uint32_t(0x2c)
 
+#pragma pack(pop)
+
 union Version {
+	#pragma pack(push,1)
 	struct {
 		uint8_t patch;
 		uint8_t minor;
 		uint16_t major;
-	} _packed;
+	};
+	#pragma pack(pop)
 
 	uint32_t value;
 };
 
+#pragma pack(push,1)
 struct dylib {
 	uint32_t name;
 	uint32_t timestamp;
 	uint32_t current_version;
 	uint32_t compatibility_version;
-} _packed;
+};
 
 struct dylib_command {
 	uint32_t cmd;
 	uint32_t cmdsize;
 	struct dylib dylib;
-} _packed;
+};
 
 struct uuid_command {
 	uint32_t cmd;
 	uint32_t cmdsize;
 	uint8_t uuid[16];
-} _packed;
+};
 
 struct symtab_command {
 	uint32_t cmd;
@@ -335,7 +336,7 @@ struct symtab_command {
 	uint32_t nsyms;
 	uint32_t stroff;
 	uint32_t strsize;
-} _packed;
+};
 
 struct dyld_info_command {
 	uint32_t cmd;
@@ -350,7 +351,7 @@ struct dyld_info_command {
 	uint32_t lazy_bind_size;
 	uint32_t export_off;
 	uint32_t export_size;
-} _packed;
+};
 
 struct dysymtab_command {
 	uint32_t cmd;
@@ -373,12 +374,12 @@ struct dysymtab_command {
 	uint32_t nextrel;
 	uint32_t locreloff;
 	uint32_t nlocrel;
-} _packed;
+};
 
 struct dylib_table_of_contents {
 	uint32_t symbol_index;
 	uint32_t module_index;
-} _packed;
+};
 
 struct dylib_module {
 	uint32_t module_name;
@@ -394,12 +395,12 @@ struct dylib_module {
 	uint32_t ninit_nterm;
 	uint32_t objc_module_info_addr;
 	uint32_t objc_module_info_size;
-} _packed;
+};
 
 struct dylib_reference {
 	uint32_t isym : 24;
 	uint32_t flags : 8;
-} _packed;
+};
 
 struct relocation_info {
 	int32_t r_address;
@@ -408,7 +409,7 @@ struct relocation_info {
 	uint32_t r_length : 2;
 	uint32_t r_extern : 1;
 	uint32_t r_type : 4;
-} _packed;
+};
 
 struct nlist {
 	union {
@@ -420,7 +421,7 @@ struct nlist {
 	uint8_t n_sect;
 	uint8_t n_desc;
 	uint32_t n_value;
-} _packed;
+};
 
 struct segment_command {
 	uint32_t cmd;
@@ -434,7 +435,7 @@ struct segment_command {
 	uint32_t initprot;
 	uint32_t nsects;
 	uint32_t flags;
-} _packed;
+};
 
 struct segment_command_64 {
 	uint32_t cmd;
@@ -448,7 +449,7 @@ struct segment_command_64 {
 	uint32_t initprot;
 	uint32_t nsects;
 	uint32_t flags;
-} _packed;
+};
 
 struct section {
 	char sectname[16];
@@ -462,7 +463,7 @@ struct section {
 	uint32_t flags;
 	uint32_t reserved1;
 	uint32_t reserved2;
-} _packed;
+};
 
 struct section_64 {
 	char sectname[16];
@@ -477,14 +478,14 @@ struct section_64 {
 	uint32_t reserved1;
 	uint32_t reserved2;
 	uint32_t reserved3;
-} _packed;
+};
 
 struct linkedit_data_command {
 	uint32_t cmd;
 	uint32_t cmdsize;
 	uint32_t dataoff;
 	uint32_t datasize;
-} _packed;
+};
 
 struct encryption_info_command {
 	uint32_t cmd;
@@ -492,7 +493,10 @@ struct encryption_info_command {
 	uint32_t cryptoff;
 	uint32_t cryptsize;
 	uint32_t cryptid;
-} _packed;
+};
+
+
+#pragma pack(pop)
 
 #define BIND_OPCODE_MASK                             0xf0
 #define BIND_IMMEDIATE_MASK                          0x0f
@@ -546,9 +550,10 @@ static size_t most(std::streambuf& stream, void* data, size_t size) {
 }
 
 static inline void pad(std::streambuf& stream, size_t size) {
-	char padding[size];
+        char* padding = (char*)malloc(size);
 	memset(padding, 0, size);
 	put(stream, padding, size);
+	free(padding);
 }
 
 template <typename Type_>
@@ -870,21 +875,25 @@ public:
 #define CS_EXECSEG_MAIN_BINARY      0x1
 #define CS_EXECSEG_ALLOW_UNSIGNED   0x10
 
+#pragma pack(push,1)
+
 struct BlobIndex {
 	uint32_t type;
 	uint32_t offset;
-} _packed;
+};
 
 struct Blob {
 	uint32_t magic;
 	uint32_t length;
-} _packed;
+};
 
 struct SuperBlob {
 	struct Blob blob;
 	uint32_t count;
 	struct BlobIndex index[];
-} _packed;
+};
+
+#pragma pack(pop)
 
 struct EntitlementValue
 {
@@ -1063,6 +1072,8 @@ struct EntitlementsSuperBlob
 	}
 };
 
+#pragma pack(push,1)
+
 struct CodeDirectory {
 	uint32_t version;
 	uint32_t flags;
@@ -1083,7 +1094,9 @@ struct CodeDirectory {
 	uint64_t execSegBase;
 	uint64_t execSegLimit;
 	uint64_t execSegFlags;
-} _packed;
+};
+
+#pragma pack(pop)
 
 #ifndef LDID_NOFLAGT
 extern "C" uint32_t hash(uint8_t* k, uint32_t length, uint32_t initval);
@@ -1202,8 +1215,7 @@ public:
 	}
 
 	~File() {
-		if (file_ != -1)
-			_syscall(_close(file_));
+		_syscall(_close(file_));
 	}
 
 	void open(const char* path, int flags) {
@@ -1329,7 +1341,12 @@ namespace ldid {
 			offset += sizeof(fat_header) + sizeof(fat_arch) * source.Swap(source->nfat_arch);
 
 		std::vector<CodesignAllocation> allocations;
-		_foreach(mach_header, source.GetMachHeaders()) {
+		for (bool _stop(true); _stop; )
+			for (const __typeof__(source.GetMachHeaders()) &_list = (source.GetMachHeaders()); _stop; _stop = false)
+				for (__typeof__(source.GetMachHeaders())::const_iterator _item = _list.begin(); _item != _list.end(); ++_item)
+					for (bool _suck(true); _suck; _suck = false)
+						for (const __typeof__(*_item) &mach_header = *_item; _suck; _suck = false) {
+
 			struct linkedit_data_command* signature(NULL);
 			struct symtab_command* symtab(NULL);
 
@@ -1359,7 +1376,7 @@ namespace ldid {
 
 			size_t alloc(allocate(mach_header, size));
 
-			auto* fat_arch(mach_header.GetFatArch());
+			fat_arch* fat_arch(mach_header.GetFatArch());
 			uint32_t align;
 
 			if (fat_arch != NULL)
@@ -2300,72 +2317,6 @@ namespace ldid {
 		return parent_.Find(path_ + path, code, link);
 	}
 
-	std::string UnionFolder::Map(const std::string& path) const {
-		auto remap(remaps_.find(path));
-		if (remap == remaps_.end())
-			return path;
-		return remap->second;
-	}
-
-	void UnionFolder::Map(const std::string& path, const Functor<void(const std::string&)>& code, const std::string& file, const Functor<void(const Functor<void(std::streambuf&, size_t, const void*)>&)>& save) const {
-		if (file.size() >= path.size() && file.substr(0, path.size()) == path)
-			code(file.substr(path.size()));
-	}
-
-	UnionFolder::UnionFolder(Folder& parent) :
-		parent_(parent)
-	{
-	}
-
-	void UnionFolder::Save(const std::string& path, bool edit, const void* flag, const Functor<void(std::streambuf&)>& code) {
-		return parent_.Save(Map(path), edit, flag, code);
-	}
-
-	bool UnionFolder::Look(const std::string& path) const {
-		auto file(resets_.find(path));
-		if (file != resets_.end())
-			return true;
-		return parent_.Look(Map(path));
-	}
-
-	void UnionFolder::Open(const std::string& path, const Functor<void(std::streambuf&, size_t, const void*)>& code) const {
-		auto file(resets_.find(path));
-		if (file == resets_.end())
-			return parent_.Open(Map(path), code);
-		auto& entry(file->second);
-
-		auto& data(*entry.data_);
-		auto length(data.pubseekoff(0, std::ios::end, std::ios::in));
-		data.pubseekpos(0, std::ios::in);
-		code(data, length, entry.flag_);
-	}
-
-	void UnionFolder::Find(const std::string& path, const Functor<void(const std::string&)>& code, const Functor<void(const std::string&, const Functor<std::string()>&)>& link) const {
-		for (auto& reset : resets_)
-			Map(path, code, reset.first, fun([&](const Functor<void(std::streambuf&, size_t, const void*)>& code) {
-			auto& entry(reset.second);
-			auto& data(*entry.data_);
-			auto length(data.pubseekoff(0, std::ios::end, std::ios::in));
-			data.pubseekpos(0, std::ios::in);
-			code(data, length, entry.flag_);
-				}));
-
-		for (auto& remap : remaps_)
-			Map(path, code, remap.first, fun([&](const Functor<void(std::streambuf&, size_t, const void*)>& code) {
-			parent_.Open(remap.second, fun([&](std::streambuf& data, size_t length, const void* flag) {
-				code(data, length, flag);
-				}));
-				}));
-
-		parent_.Find(path, fun([&](const std::string& name) {
-			if (deletes_.find(path + name) == deletes_.end())
-				code(name);
-			}), fun([&](const std::string& name, const Functor<std::string()>& read) {
-				if (deletes_.find(path + name) == deletes_.end())
-					link(name, read);
-				}));
-	}
-
 #ifndef LDID_NOTOOLS
 	static void copy(std::streambuf& source, std::streambuf& target, size_t length, const ldid::Functor<void(double)>& percent) {
 		percent(0);
@@ -2435,13 +2386,16 @@ namespace ldid {
 		}
 
 		bool operator ()(const std::string& data) {
-			regmatch_t matches[matches_.size()];
+			regmatch_t* matches = (regmatch_t*)malloc(matches_.size() * sizeof(regmatch_t));
 			auto value(regexec(&regex_, data.c_str(), matches_.size(), matches, 0));
-			if (value == REG_NOMATCH)
+			if (value == REG_NOMATCH) {
+				free(matches);
 				return false;
+                        }
 			_assert_(value == 0, "regexec()");
 			for (size_t i(0); i != matches_.size(); ++i)
 				matches_[i].assign(data.data() + matches[i].rm_so, matches[i].rm_eo - matches[i].rm_so);
+			free(matches);
 			return true;
 		}
 
