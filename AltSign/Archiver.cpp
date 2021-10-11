@@ -12,6 +12,8 @@
 #include "Archiver.hpp"
 #include "Error.hpp"
 
+#include <unordered_set>
+
 extern "C" {
 #include "zip.h"
 #include "unzip.h"
@@ -221,9 +223,14 @@ std::string UnzipAppBundle(std::string filepath, std::string outputDirectory)
 }
 
 
-void WriteFileToZipFile(zipFile* zipFile, fs::path filepath, fs::path relativePath)
+/*
+ * realFilePath: the "real"/original file with proper permissions
+ * saveFilePath: the file to put into the ZIP file
+ * relativePath: the path for the file in the ZIP file
+ */
+void WriteFileToZipFile(zipFile* zipFile, fs::path realFilePath, fs::path saveFilePath, fs::path relativePath)
 {
-    bool isDirectory = fs::is_directory(filepath);
+    bool isDirectory = fs::is_directory(realFilePath);
 
     std::string filename = relativePath.string();
 
@@ -244,7 +251,7 @@ void WriteFileToZipFile(zipFile* zipFile, fs::path filepath, fs::path relativePa
             filename = filename + ALTDirectoryDeliminator;
         }
     } else {
-        fs::file_status status = fs::status(filepath);
+        fs::file_status status = fs::status(realFilePath);
 
         short permissions = (short)status.permissions();
         long shiftedPermissions = 0100000 + permissions;
@@ -253,7 +260,7 @@ void WriteFileToZipFile(zipFile* zipFile, fs::path filepath, fs::path relativePa
 
         fileInfo.external_fa = (unsigned int)(permissionsLong << 16L);
 
-        std::ifstream file(filepath.string(), std::ios::binary);
+        std::ifstream file(saveFilePath.string(), std::ios::binary);
         file.unsetf(std::ios::skipws);
         std::streampos fileSize;
         file.seekg(0, std::ios::end);
@@ -299,19 +306,41 @@ std::string ZipAppBundle(std::string filepath)
     fs::path payloadDirectory = "Payload";
     fs::path appBundleDirectory = payloadDirectory.append(appBundleFilename.string());
     
+    // pass to check for .ldid.* files
+    std::unordered_set<std::string> ldidPaths;
+    for (auto& entry: fs::recursive_directory_iterator(filepath))
+    {
+        auto path = entry.path();
+        if (startsWith(path.filename().string(), ".ldid."))
+        {
+	    ldidPaths.insert(path.string());
+	}
+    }
+
     for (auto& entry : fs::recursive_directory_iterator(filepath)) {
         auto path = entry.path();
+        auto realPath = path;
 
         // skip if empty or a directory
         if (path.empty() ||
+            (ldidPaths.find(path.string()) != ldidPaths.end()) ||
             fs::is_directory(path))
             continue;
+
+        {
+            auto ldidPath = path;
+            ldidPath.replace_filename(".ldid." + ldidPath.filename().string());
+            if (ldidPaths.find(ldidPath.string()) != ldidPaths.end()) {
+                std::cout << "[Warning] Using " << ldidPath << " for " << realPath << "." << std::endl;
+                path = ldidPath;
+            }
+        }
 
         fs::path relativeName = fs::relative(path, filepath);
         auto relativePath = appBundleDirectory / relativeName;
         odslog("Compressing " << path << " to " << relativePath);
 
-        WriteFileToZipFile(&zipFile, path, relativePath);
+        WriteFileToZipFile(&zipFile, realPath, path, relativePath);
     }
 
     zipClose(zipFile, NULL);

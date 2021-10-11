@@ -248,35 +248,32 @@ void Signer::SignApp(std::string path, std::shared_ptr<ProvisioningProfile> prof
         }
 
         // Sign application
-        // ~DiskFolder "commits" the signed files to disk (meaning it renames .ldid.* to just the filename)
-        {
-            std::cout << "Signing..." << std::endl;
-            ldid::DiskFolder appBundle(app.path());
-            std::string key = CertificatesContent(this->certificate());
+        std::cout << "Signing..." << std::endl;
+        ldid::DiskFolder appBundle(app.path());
+        std::string key = CertificatesContent(this->certificate());
 
-            ldid::Sign("", appBundle, key, "",
-                ldid::fun([&](const std::string& path, const std::string& binaryEntitlements) -> std::string {
+        ldid::Sign("", appBundle, key, "",
+            ldid::fun([&](const std::string& path, const std::string& binaryEntitlements) -> std::string {
 
-                    std::string filepath;
+                std::string filepath;
 
-                    if (path.size() == 0) {
-                        filepath = app.path();
-                    } else {
-                        filepath = fs::canonical(fs::path(app.path()).append(path)).string();
-                    }
+                if (path.size() == 0) {
+                    filepath = app.path();
+                } else {
+                    filepath = fs::canonical(fs::path(app.path()).append(path)).string();
+                }
 
-                    auto entitlements = entitlementsByFilepath[filepath];
-                    return entitlements;
+                auto entitlements = entitlementsByFilepath[filepath];
+                return entitlements;
 
-                }),
-                ldid::fun([&](const std::string& string) {
-                    // odslog("Signing: " << string);
-                    //            progress.completedUnitCount += 1;
-                }),
-                ldid::fun([&](const double signingProgress) {
-                    //odslog("Signing Progress: " << signingProgress);
-                }));
-        }
+            }),
+            ldid::fun([&](const std::string& string) {
+                // odslog("Signing: " << string);
+                //            progress.completedUnitCount += 1;
+            }),
+            ldid::fun([&](const double signingProgress) {
+                //odslog("Signing Progress: " << signingProgress);
+            }));
 
         // Zip app back up.
         if (ipaPath.has_value()) {
