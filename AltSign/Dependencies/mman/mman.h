@@ -8,7 +8,7 @@
 
 #ifndef _WIN32_WINNT		// Allow use of features specific to Windows XP or later.                   
 #define _WIN32_WINNT 0x0501	// Change this to the appropriate value to target other versions of Windows.
-#endif						
+#endif
 
 /* All the headers include this file. */
 #ifndef _MSC_VER
@@ -62,10 +62,10 @@ extern "C" {
 #define MS_SYNC         2
 #define MS_INVALIDATE   4
 
-MMANSHARED_EXPORT void*   mmap(void *addr, size_t len, int prot, int flags, int fildes, OffsetType off);
-MMANSHARED_EXPORT int     munmap(void *addr, size_t len);
-MMANSHARED_EXPORT int     _mprotect(void *addr, size_t len, int prot);
-MMANSHARED_EXPORT int     msync(void *addr, size_t len, int flags);
+MMANSHARED_EXPORT void* mmap(void* addr, size_t len, int prot, int flags, int fildes, OffsetType off);
+MMANSHARED_EXPORT int munmap(void* addr, size_t len);
+MMANSHARED_EXPORT int _mprotect(void* addr, size_t len, int prot);
+MMANSHARED_EXPORT int msync(void* addr, size_t len, int flags);
 
 #ifdef __cplusplus
 }
